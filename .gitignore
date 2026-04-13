@@ -1,0 +1,29 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+.next
+.turbo
+*.tsbuildinfo
+
+# Environment
+.env
+*.env.local
+!.env.example
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+test-results
+coverage
+
+# Prisma
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
