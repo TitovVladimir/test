@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useState, useCallback, FormEvent } from 'react'
 import { api, getToken, setToken, clearToken } from '@/shared/api/client'
-import { SquareCheckBig, Loader2 } from 'lucide-react'
+import { SquareCheckBig, Loader2, Sun, Moon } from 'lucide-react'
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
@@ -59,6 +59,7 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { theme, toggleTheme } = useTheme()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -77,6 +78,13 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+      <button
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+        aria-label="Переключить тему"
+      >
+        {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      </button>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-3 mb-8">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -162,9 +170,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ThemeProvider>{children}</ThemeProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>{children}</AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }

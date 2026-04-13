@@ -32,7 +32,7 @@ export function TaskForm({ task, onSubmit, onClose, isLoading }: TaskFormProps) 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onMouseDown={(e) => { if (e.target === e.currentTarget) e.currentTarget.dataset.backdrop = '1' }} onMouseUp={(e) => { const el = e.currentTarget; if (e.target === el && el.dataset.backdrop) onClose(); delete el.dataset.backdrop }}>
       <div
         className="w-full max-w-[520px] mx-4 rounded-2xl bg-card border border-border shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}

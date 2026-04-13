@@ -56,8 +56,29 @@ button {
   cursor: pointer;
 }
 
+/* Sonner toast close button */
+[data-sonner-toast] [data-close-button] {
+  opacity: 1 !important;
+  right: 4px !important;
+  top: 50% !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: 24px !important;
+  height: 24px !important;
+  transform: translateY(-50%) !important;
+  color: rgba(0, 0, 0, 0.5) !important;
+}
+[data-sonner-toast] [data-close-button]:hover {
+  color: rgba(0, 0, 0, 0.8) !important;
+}
+[data-sonner-toast] [data-close-button] svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
 @layer base {
   :root {
+    color-scheme: light;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -97,6 +118,7 @@ button {
     --surface: oklch(0.984 0.003 247);
   }
   .dark {
+    color-scheme: dark;
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);

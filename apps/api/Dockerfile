@@ -1,39 +1,29 @@
-FROM node:20-alpine AS base
+FROM node:20-alpine AS build
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
 
-# --- deps ---
-FROM base AS deps
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install --frozen-lockfile
+# 1. Copy only dependency manifests first (cached unless deps change)
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY apps/api/package.json apps/api/
+COPY packages/shared/package.json packages/shared/
+RUN pnpm install --ignore-scripts --frozen-lockfile
 
-# --- build ---
-FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY . .
+# 2. Copy source and build
+COPY packages/shared/ packages/shared/
 RUN pnpm --filter @task-manager/shared build
+
+COPY apps/api/ apps/api/
+RUN cd apps/api && npx prisma@6 generate
 RUN pnpm --filter @task-manager/api build
-RUN pnpm --filter @task-manager/api db:generate
 
-# --- production ---
-FROM node:20-alpine AS prod
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+# 3. Create production deployment
+RUN pnpm --filter @task-manager/api deploy --prod /deploy
+RUN cd /deploy && npx prisma@6 generate
+
+FROM node:20-alpine
+RUN apk update && apk add postgresql-client
+COPY --from=build /deploy /app
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install --frozen-lockfile --prod
-
-COPY --from=build /app/apps/api/dist ./apps/api/dist
-COPY --from=build /app/apps/api/prisma ./apps/api/prisma
-COPY --from=build /app/apps/api/node_modules/.prisma ./apps/api/node_modules/.prisma
-COPY --from=build /app/packages/shared/dist ./packages/shared/dist
-
-WORKDIR /app/apps/api
 ENV NODE_ENV=production
 EXPOSE 3001
-CMD ["node", "dist/main"]
+CMD echo "Ensuring database exists..." && PGPASSWORD=$POSTGRES_PASSWORD createdb -h postgres -U $POSTGRES_USER $POSTGRES_DB 2>/dev/null; echo "Pushing schema..." && npx prisma@6 db push --skip-generate && echo "Starting app..." && node dist/main

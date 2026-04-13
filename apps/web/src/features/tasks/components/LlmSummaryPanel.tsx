@@ -93,7 +93,7 @@ export function LlmSummaryPanel({ isOpen, onClose, data, isLoading }: LlmSummary
     : null
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex md:justify-end z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex md:justify-end z-50" onMouseDown={(e) => { if (e.target === e.currentTarget) e.currentTarget.dataset.backdrop = '1' }} onMouseUp={(e) => { const el = e.currentTarget; if (e.target === el && el.dataset.backdrop) onClose(); delete el.dataset.backdrop }}>
       <div
         className="h-full w-full md:w-[520px] md:max-w-full bg-card border-l border-border flex flex-col shadow-2xl"
         onClick={(e) => e.stopPropagation()}

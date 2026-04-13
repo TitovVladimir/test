@@ -223,7 +223,8 @@ export function KanbanBoard() {
           await api.tasks.update(activeId, { status: targetStatus })
         }
         await api.tasks.reorder(finalOrder)
-        queryClient.invalidateQueries({ queryKey: ['tasks'] })
+        // Wait for fresh data before resetting local state — prevents teleport back
+        await queryClient.refetchQueries({ queryKey: ['tasks'] })
         if (statusChanged) {
           toast.success(`Задача перемещена: ${STATUS_LABELS[targetStatus as keyof typeof STATUS_LABELS]}`)
         }
@@ -231,7 +232,7 @@ export function KanbanBoard() {
         toast.error('Не удалось переместить задачу')
         queryClient.invalidateQueries({ queryKey: ['tasks'] })
       }
-      // Reset only after server responds — no teleport back
+      // Now allTasks is fresh — safe to switch without teleport
       setLocalTasks(null)
     })()
   }, [allTasks, localTasks, queryClient])
@@ -287,9 +288,12 @@ export function KanbanBoard() {
     [categorizeMutation, decomposeMutation, prioritizeMutation, updateMutation],
   )
 
+  const [isAcceptingDecompose, setIsAcceptingDecompose] = useState(false)
+
   const handleAcceptDecompose = useCallback(
     async (subtasks: { title: string; description: string }[]) => {
-      if (!decomposeTask) return
+      if (!decomposeTask || isAcceptingDecompose) return
+      setIsAcceptingDecompose(true)
       try {
         await Promise.all(subtasks.map((s) => api.tasks.create({ title: s.title, description: s.description })))
         await api.tasks.delete(decomposeTask.id)
@@ -300,9 +304,11 @@ export function KanbanBoard() {
         queryClient.invalidateQueries({ queryKey: ['tasks'] })
       } catch {
         toast.error('Не удалось создать подзадачи')
+      } finally {
+        setIsAcceptingDecompose(false)
       }
     },
-    [decomposeTask, queryClient],
+    [decomposeTask, isAcceptingDecompose, queryClient],
   )
 
   const handleStatusChange = useCallback(
@@ -530,7 +536,7 @@ export function KanbanBoard() {
         <DecomposeDialog
           task={decomposeTask}
           subtasks={decomposeResult}
-          isLoading={decomposeMutation.isPending}
+          isLoading={decomposeMutation.isPending || isAcceptingDecompose}
           onAccept={handleAcceptDecompose}
           onClose={() => {
             decomposeAbortRef.current?.abort()
