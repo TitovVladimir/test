@@ -1,20 +1,4 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-taskmanager}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
-
   api:
     build:
       context: .
@@ -22,10 +6,7 @@ services:
     ports:
       - "${API_PORT:-3001}:3001"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-taskmanager}
-      POSTGRES_DB: ${POSTGRES_DB:-taskmanager}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_URL: file:./data/taskmanager.db
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       PORT: 3001
       AUTH_PASSWORD: ${AUTH_PASSWORD:-tasks2024}
@@ -33,9 +14,8 @@ services:
       ZHIPU_API_KEY: ${ZHIPU_API_KEY}
       ZHIPU_MODEL: ${ZHIPU_MODEL:-GLM-5-Turbo}
       ZHIPU_BASE_URL: ${ZHIPU_BASE_URL:-https://api.z.ai/api/anthropic}
-    depends_on:
-      postgres:
-        condition: service_healthy
+    volumes:
+      - db-data:/app/data
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/docs').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
@@ -61,7 +41,7 @@ services:
       - app-network
 
 volumes:
-  pgdata:
+  db-data:
 
 networks:
   app-network:
